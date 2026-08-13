@@ -1,0 +1,120 @@
+/* Old Escondido Community Yard Sale — oldescondidoyardsale.com
+   The page markup carries its own inline styles, so this file only holds what
+   inline styles cannot express: resets, keyframes, and interaction states.
+   Nothing here needs a build step. */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 17px;
+  line-height: 1.65;
+  color: #3e3e3e;
+  background: #fff;
+  -webkit-font-smoothing: antialiased;
+}
+
+img { max-width: 100%; display: block; }
+
+::selection { background: #8cbce3; color: #1d1d1d; }
+
+/* ── Links ─────────────────────────────────────────────────────────────────── */
+a { color: #0b5884; }
+a:hover { color: #083f5e; }
+a:active { color: #062f47; }
+
+/* ── Buttons: hover / press. !important because the markup is inline-styled. ─ */
+a[href="#register"]:hover, a[href="#map"]:hover, button[type="submit"]:hover {
+  background: #083f5e !important;
+  border-color: #083f5e !important;
+}
+a[href="#register"]:active, a[href="#map"]:active, button[type="submit"]:active {
+  background: #062f47 !important;
+  border-color: #062f47 !important;
+  transform: translateY(1px);
+}
+a[href="/"]:hover { background: #eff6fc !important; }
+
+/* ── Form fields ───────────────────────────────────────────────────────────── */
+input, select, button { font: inherit; }
+input::placeholder { color: #9c9c9c; }
+input:hover, select:hover { border-color: #2e7aa8 !important; }
+input:focus, select:focus {
+  border-color: #0b5884 !important;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(140, 188, 227, 0.65);
+}
+/* Only flag a field once the visitor has actually left it invalid. Never
+   `:invalid:not(:placeholder-shown)` — most fields here have no placeholder by
+   design, so that combination marks empty required fields as errors on load. */
+input:user-invalid, select:user-invalid { border-color: #9d2b1c !important; }
+/* The brand chevron on the native select. !important because the markup's own
+   inline `background` shorthand would otherwise reset background-image to none. */
+select {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9' fill='none'%3E%3Cpath d='M1 1l6 6 6-6' stroke='%230b5884' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 16px center !important;
+}
+:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(140, 188, 227, 0.65); }
+
+/* ── FAQ accordion ─────────────────────────────────────────────────────────── */
+details summary::-webkit-details-marker { display: none; }
+details summary:hover { color: #0b5884 !important; }
+details summary span { transition: transform 220ms cubic-bezier(.22, .61, .36, 1); }
+details[open] summary span { transform: rotate(45deg); }
+
+/* ── "Just here to shop?" bar — revealed on scroll by site JS ──────────────── */
+.oe-shop {
+  position: fixed; z-index: 30; left: 50%; bottom: 18px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 22px; min-height: 48px;
+  max-width: calc(100vw - 32px); white-space: nowrap;
+  background: #fff; border: 1px solid #dcdcdc; border-radius: 999px;
+  box-shadow: 0 2px 4px rgba(11, 88, 132, .06), 0 14px 34px rgba(11, 88, 132, .12);
+  font-size: 15px; font-weight: 500; color: #0b5884; text-decoration: none;
+  opacity: 0; visibility: hidden; transform: translate(-50%, 20px);
+  transition: opacity 220ms cubic-bezier(.22, .61, .36, 1),
+              transform 220ms cubic-bezier(.22, .61, .36, 1), visibility 220ms;
+}
+.oe-shop--on { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
+.oe-shop:hover { color: #083f5e; border-color: #8cbce3; }
+
+/* ── Hero animation ────────────────────────────────────────────────────────── */
+@keyframes oe-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes oe-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes oe-cloud-in { to { opacity: .55; } }
+@keyframes oe-drift { from { transform: translateX(0); } to { transform: translateX(150vw); } }
+@keyframes oe-flag-in { from { opacity: 0; transform: translateY(-22px); } to { opacity: 1; transform: none; } }
+@keyframes oe-flag-in-r { from { opacity: 0; transform: scaleX(-1) translateY(-22px); } to { opacity: 1; transform: scaleX(-1); } }
+@keyframes oe-sway { from { transform: rotate(-1.1deg); } to { transform: rotate(1.1deg); } }
+@keyframes oe-sway-r { from { transform: scaleX(-1) rotate(-1.1deg); } to { transform: scaleX(-1) rotate(1.1deg); } }
+@keyframes oe-tree-sway { from { transform: rotate(-1.7deg); } to { transform: rotate(1.7deg); } }
+@keyframes oe-shrub-sway { from { transform: rotate(-1.3deg); } to { transform: rotate(1.3deg); } }
+@keyframes oe-bloom { from { transform: rotate(-2.6deg); } to { transform: rotate(2.6deg); } }
+@keyframes oe-swing { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
+@keyframes oe-swing-slight { from { transform: rotate(-1.8deg); } to { transform: rotate(1.8deg); } }
+/* The bicycle rides the width of the scene and loops. */
+@keyframes oe-ride { from { transform: translateX(-30vw); } to { transform: translateX(104vw); } }
+
+/* Freeze the whole scene for anyone who asks for less motion. The sprites start
+   at opacity 0 and rely on oe-fade to appear, so opacity has to be forced back. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  [class^="oe-anim"], .oe-scene *, .oe-scn {
+    animation: none !important; opacity: 1 !important; transform: none !important;
+  }
+  .oe-flag-r { transform: scaleX(-1) !important; }
+  .oe-scn--bike { left: 34% !important; }
+}
+
+/* ── Small phones ──────────────────────────────────────────────────────────── */
+@media (max-width: 419px) {
+  .oe-scene img[style*="clamp(138px"] { width: 124px !important; }
+}
+
+@media print {
+  .oe-shop { display: none; }
+}
