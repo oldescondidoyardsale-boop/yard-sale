@@ -1,4 +1,5 @@
 <!doctype html>
+<!-- BUILD 2026-09-21-b · printed maps: Top of 6th Ave · form: Sheet-primary -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -140,7 +141,7 @@
 <p style="margin:0 0 14px;font-family:'Poppins',system-ui,sans-serif;font-size:13px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#0b5884">On the day</p>
 <h2 style="margin:0 0 24px;font-family:'Poppins',system-ui,sans-serif;font-size:clamp(26px,6.4vw,34px);font-weight:700;color:#0b5884;line-height:1.16">Saturday, October 10</h2>
 <p style="margin:0 0 24px;font-size:17px;line-height:1.65;color:#3e3e3e">Sales run from 7:30 until 1:00. Most households pack up by noon, so the best time to come is early. Bring small bills — most sales are cash.</p>
-<aside style="background:#eff6fc;border:1px solid #8cbce3;border-radius:24px;padding:clamp(20px,5vw,28px);display:flex;flex-direction:column;gap:14px"><span style="font-family:'Poppins',system-ui,sans-serif;font-size:13px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#0b5884">Live map</span><span style="font-family:'Poppins',system-ui,sans-serif;font-size:20px;font-weight:600;color:#1d1d1d;line-height:1.35">The map goes live Thursday, October 8</span><p style="margin:0;font-size:17px;line-height:1.65;color:#3e3e3e">Two days before the sale this page turns into the live map of every registered address. Same link, same QR code — nothing new to scan.</p></aside>
+<aside style="background:#eff6fc;border:1px solid #8cbce3;border-radius:24px;padding:clamp(20px,5vw,28px);display:flex;flex-direction:column;gap:14px"><span style="font-family:'Poppins',system-ui,sans-serif;font-size:13px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#0b5884">Printed maps</span><span style="font-family:'Poppins',system-ui,sans-serif;font-size:20px;font-weight:600;color:#1d1d1d;line-height:1.35">Top of 6th Ave</span><p style="margin:0;font-size:17px;line-height:1.65;color:#3e3e3e">Free printed maps will be available at the top of 6th Ave from 6:30 to 8:30 AM. The digital map goes live on this page two days before the sale.</p></aside>
 </div>
 </section>
 
@@ -156,16 +157,20 @@
 <script>
 /* Every registration is written to TWO places, on purpose:
 
-   1. Netlify Forms — the capture that cannot fail. No auth, no third party, no
-      CORS. Submissions land in the Netlify dashboard under Forms and can be
-      emailed and exported to CSV. This is the one we wait for.
-   2. The Apps Script endpoint — feeds the Google Sheet directly. Fired and
-      forgotten, because Apps Script silently redirects to a Google login page
-      whenever the deployment's "Who has access" is not "Anyone", and a broken
-      Sheet feed must never cost us a registration.
+   1. The Apps Script endpoint — feeds the Google Sheet. This is the PRIMARY and
+      the one the success message is tied to. It is sent `no-cors`, so the
+      browser hands back an opaque response: we can confirm the request left the
+      device, not what the server replied. That is enough, because Apps Script
+      writes the row server-side either way — and it beats making a neighbour
+      retype everything over a response we are not allowed to read.
+   2. Netlify Forms — a silent backup copy in the Netlify dashboard. Fired and
+      forgotten: Netlify only accepts a POST to `/` once it has detected the
+      form at deploy time, and if detection is off that POST 404s. A backup that
+      is not set up must never block a registration that already succeeded.
 
-   So a neighbour who registers is always recorded, even if the Sheet link is
-   misconfigured. */
+   Earlier this was the other way round, and it was wrong: the Sheet was filling
+   up correctly while the page said "That didn't go through", because it was
+   waiting on the Netlify POST. Wait on the thing that works. */
 (function () {
   var form = document.getElementById('regform');
   if (!form) return;
@@ -198,28 +203,44 @@
     var body = encode(new FormData(form));
     var headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
 
-    // Sheet feed — never awaited, never allowed to throw.
-    if (sheetUrl && sheetUrl.indexOf('PASTE_') !== 0) {
-      try {
-        fetch(sheetUrl, { method: 'POST', mode: 'no-cors', headers: headers, body: body, keepalive: true })
-          .catch(function () {});
-      } catch (_) {}
+    function done() { window.location.href = 'thanks.html'; }
+
+    function failed() {
+      busy = false;
+      if (err) err.hidden = false;
+      if (btn) {
+        btn.disabled = false;
+        btn.style.opacity = '';
+        btn.textContent = 'Add me to the map';
+      }
     }
 
-    // Netlify Forms — the authoritative capture.
-    fetch('/', { method: 'POST', headers: headers, body: body })
-      .then(function (r) {
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        window.location.href = 'thanks.html';
+    // Backup copy — never awaited, never allowed to surface an error.
+    try {
+      fetch('/', { method: 'POST', headers: headers, body: body, keepalive: true })
+        .catch(function () {});
+    } catch (_) {}
+
+    if (!sheetUrl || sheetUrl.indexOf('PASTE_') === 0) { done(); return; }
+
+    // Primary — the Google Sheet.
+    var settled = false;
+    var guard = setTimeout(function () {
+      if (!settled) { settled = true; done(); }
+    }, 6000);
+
+    fetch(sheetUrl, { method: 'POST', mode: 'no-cors', headers: headers, body: body })
+      .then(function () {
+        if (settled) return;
+        settled = true;
+        clearTimeout(guard);
+        done();
       })
       .catch(function () {
-        busy = false;
-        if (err) err.hidden = false;
-        if (btn) {
-          btn.disabled = false;
-          btn.style.opacity = '';
-          btn.textContent = 'Add me to the map';
-        }
+        if (settled) return;
+        settled = true;
+        clearTimeout(guard);
+        failed(); // genuinely offline — nothing left the device
       });
   });
 })();
