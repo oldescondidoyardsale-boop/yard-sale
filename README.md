@@ -17,7 +17,8 @@ District, Escondido CA. Hosted by Andrea Zeman Homes.
 | `thanks.html` | Confirmation. Where the form lands after a successful submit. |
 | `site.css` | The only stylesheet. Resets, hero animation keyframes, hover/focus states. |
 | `google-apps-script.gs` | Paste into your Google Sheet's Apps Script editor to receive registrations. Not served to the web. |
-| `assets/` | Logo, illustration sprites, district map, social card, favicon. |
+| `FORM-FIX-READ-ME.md` | **Start here.** Why the form wasn't saving, and the one-minute fix. |
+| `assets/` | Logo, illustration sprites, district map, social card, favicon. All in one flat folder — no sub-folders. |
 | `vercel.json` | Caching + security headers. `cleanUrls` is on, so `/map` works as well as `/map.html`. |
 | `robots.txt`, `sitemap.xml` | Search basics. `thanks.html` is excluded. |
 
@@ -25,19 +26,36 @@ District, Escondido CA. Hosted by Andrea Zeman Homes.
 
 ## Before you go live
 
-### 1. The form is wired ✅
+### 1. The form — ⚠️ read `FORM-FIX-READ-ME.md` first
 
-The form already posts to your live Apps Script endpoint:
+I tested your endpoint on **14 August 2026** and it returned a **Google sign-in
+page**, which means no registration has ever reached the Sheet. The one-minute
+fix is in **[`FORM-FIX-READ-ME.md`](FORM-FIX-READ-ME.md)** — do that before you
+share the link.
+
+So the form now writes to **two** destinations on every submission:
+
+| Destination | Setup needed | Role |
+| --- | --- | --- |
+| **Netlify Forms** | None — works on deploy | The capture that cannot fail |
+| **Google Sheet** via Apps Script | The fix above | Your working spreadsheet |
+
+The page only waits for Netlify, so a broken Sheet feed can never cost you a
+registration. Submissions appear in the Netlify dashboard under **Forms →
+registration**, and you can have them emailed to you — see `FORM-FIX-READ-ME.md`.
+
+The Sheet endpoint lives on the form's `data-sheet-endpoint` attribute in
+`index.html`:
 
 ```
 https://script.google.com/macros/s/AKfycbwwpIX7oPf6U93-4WOFD0KkwFLqd-kNed6H09ef09gc9xbn3ZTkZRQQka0o5XcAY7PG/exec
 ```
 
-It appears twice in `index.html` (`action` and `data-endpoint`) and both are set.
+Both POSTs go through `fetch`, which keeps the visitor on your site and works
+inside the Instagram and Facebook in-app browsers.
 
-**Test it once before you share the link:** open the page, fill the form, submit.
-You should land on `thanks.html`, a row should appear in the Sheet, and an email
-should arrive at `GarageSaleOldEscondido@gmail.com`.
+**Test it once before you share the link**, and confirm the row really lands in
+the Sheet — see *The Sheet is empty* below if it doesn't.
 
 #### Columns you get
 
@@ -63,37 +81,76 @@ Editing the code alone does nothing to the live endpoint until you redeploy. Don
 this way the URL stays the same, so you never touch `index.html` again. Only
 *Deploy → New deployment* mints a different URL — avoid that.
 
-#### Troubleshooting
+#### The Sheet is empty — read this first
+
+If you submitted the form, landed on `thanks.html`, and **nothing appeared in the
+Sheet**, the endpoint is rejecting the request. Landing on the thank-you page is
+**not** proof it saved. Check in this order:
+
+**1. Is the endpoint actually live?**
+Paste your `/exec` URL straight into a browser address bar:
+
+```
+https://script.google.com/macros/s/AKfycbwwpIX7oPf6U93-4WOFD0KkwFLqd-kNed6H09ef09gc9xbn3ZTkZRQQka0o5XcAY7PG/exec
+```
+
+- ✅ *"Old Escondido Yard Sale registration endpoint is live"* → endpoint is fine,
+  go to step 3
+- ❌ A **Google sign-in page** → *Who has access* is wrong. This is the usual
+  cause. Fix: **Deploy → Manage deployments → pencil → Who has access: Anyone →
+  Version: New version → Deploy.** It must be **Anyone**, not *Anyone with a
+  Google account*.
+- ❌ *"Script function not found: doGet"* → the code didn't save, or only part of
+  it was pasted. Re-paste all of `google-apps-script.gs`, save, redeploy as a new
+  version.
+
+**2. Did you deploy after pasting the code?**
+Saving in the Apps Script editor does nothing to the live URL. You must do
+**Deploy → Manage deployments → pencil → Version: New version → Deploy** every
+time you change the script.
+
+**3. Run it once by hand.**
+In the Apps Script editor, pick `setup` from the function dropdown and press
+**Run**. That creates the `Registrations` tab with its headers. If the headers
+appear, the script and the Sheet are connected properly and the problem is the
+deployment settings from step 1.
+
+**4. Check the execution log.**
+Apps Script left sidebar → **Executions**. Every real submission shows up here.
+- No rows at all → the request never reached Google (step 1)
+- Rows marked *Failed* → open one to see the error
+
+#### Other issues
 
 | Symptom | Cause |
 | --- | --- |
-| No row, no email | *Who has access* wasn't set to **Anyone**. Manage deployments → edit → fix → new version. |
-| Lands on a Google page instead of `thanks.html` | Only `action` got the URL, not `data-endpoint`. Both need it. |
 | Rows appear but no email | Gmail's daily send quota, or `NOTIFY_EMAIL` is empty. Rows are never lost to a mail failure. |
-| Sheet stays empty on test | Open the `/exec` URL directly in a browser — it should say *"registration endpoint is live"*. If it errors, redeploy. |
-
-The submit uses `fetch`; if a browser somehow can't run it, the form falls back
-to a plain HTML POST to the same endpoint, so the row still gets written.
+| Images missing / broken icons | The `assets` folder didn't upload. Every image lives directly in `assets/` — no sub-folders — so drag the **whole `site` folder** in, not the files inside it. |
+| Lands on a Google page instead of `thanks.html` | JavaScript is blocked. The registration is still saved; only the redirect is lost. |
 
 #### Setting this up again from scratch
 
 If you ever need a fresh Sheet: create one at [sheets.new](https://sheets.new),
 open **Extensions → Apps Script**, paste in all of `google-apps-script.gs`, then
 **Deploy → New deployment → Web app**, *Execute as* **Me**, *Who has access*
-**Anyone**. Copy the `/exec` URL into both places in `index.html`.
+**Anyone**. Copy the `/exec` URL into the form's `data-sheet-endpoint` in
+`index.html`.
 
 #### Prefer email-only instead of a Sheet?
 
-[Formspree](https://formspree.io) is a drop-in alternative: sign up, create a
-form, and put its endpoint in the `action` attribute (delete the `data-endpoint`
-attribute so the script stops intercepting). Free for 50 submissions a month.
+You already have this — Netlify Forms can email every submission. See
+`FORM-FIX-READ-ME.md`. [Formspree](https://formspree.io) is another option if you
+ever move off Netlify.
 
 ### 2. Check the placeholder facts
 
 These were written from the event playbook and may need confirming:
 
-- **Map pickup point** — "Grape Day Park, Broadway entrance, 6:30–8:30 AM"
-  appears in `index.html` and `map.html`
+- **Map pickup point** — "Top of 6th Ave, 6:30–8:30 AM" (confirmed).
+  Appears in `map.html` only (removed from `index.html` at your request)
+- **Map go-live date** — Thursday, October 8 (two days before the sale). Stated in
+  the "On the day" section on `index.html` and in the shop bar. Change both if
+  the date moves.
 - **Registration deadline** — Monday, October 5
 - **Sponsor row** in the footer is text only; no partner logo files were supplied
 
