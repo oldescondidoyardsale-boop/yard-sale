@@ -167,7 +167,7 @@ Easiest route is the Netlify notification above. If you would rather have it com
 from the Sheet: open the Sheet → **Tools → Notification settings → Edit
 notifications** → *Any changes are made* → *Email – right away*.
 
-### B) Confirmation to the *neighbour*
+### B) Confirmation to the *neighbor*
 
 This needs a few lines in your Apps Script. Add this function to `Code.gs`:
 
@@ -178,7 +178,7 @@ function sendConfirmation_(data) {
     to: data.email,
     subject: "You're on the map — Old Escondido Yard Sale, Oct 10",
     body:
-      "Hi " + (data.first || "neighbour") + ",\n\n" +
+      "Hi " + (data.first || "neighbor") + ",\n\n" +
       "You're registered for the Old Escondido Community Yard Sale.\n\n" +
       "  Address:  " + (data.street || "") + "\n" +
       "  Date:     Saturday, October 10\n" +
